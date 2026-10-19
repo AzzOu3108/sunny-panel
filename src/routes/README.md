@@ -18,4 +18,4 @@ is `src/routes/__root.jsx`.
 | `_layout.jsx` | layout route (renders children via `<Outlet />`) |
 | `__root.jsx` | app shell — wraps every page; preserve `<Outlet />` |
 
-`routeTree.gen.js` is auto-generated. Don't edit it by hand.
+`routeTree.gen.ts` is auto-generated. Don't edit it by hand.
