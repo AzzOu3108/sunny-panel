@@ -24,7 +24,8 @@ npm run dev
 
 ## Built with
 
-- TanStack Start
+- Vite
+- TanStack Router
 - JavaScript
 - React
 - Tailwind CSS

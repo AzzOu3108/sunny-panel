@@ -1,9 +1,9 @@
 # Routes
 
-TanStack Start uses **file-based routing**. Every `.jsx` file in this directory
-defines a route. Do **not** create `src/pages/`, `src/routes/_app/index.jsx`, or
-`app/layout.jsx` — those are Next.js / Remix conventions. The only root layout
-is `src/routes/__root.jsx`.
+TanStack Router uses **file-based routing**. Every `.jsx` file in this directory
+defines a client-side route. Do **not** create `src/pages/`, `src/routes/_app/index.jsx`,
+or `app/layout.jsx` — those are Next.js / Remix conventions. The root layout is
+`src/routes/__root.jsx`.
 
 ## Conventions
 
@@ -18,4 +18,5 @@ is `src/routes/__root.jsx`.
 | `_layout.jsx` | layout route (renders children via `<Outlet />`) |
 | `__root.jsx` | app shell — wraps every page; preserve `<Outlet />` |
 
-`routeTree.gen.ts` is auto-generated. Don't edit it by hand.
+`routeTree.gen.ts` is auto-generated. Don't edit it by hand. Route loaders and UI
+run in the browser; connect them to your backend when it is ready.
