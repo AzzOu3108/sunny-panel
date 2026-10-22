@@ -16,6 +16,12 @@ dist-ssr
 .nitro
 *.local
 
+# Bun artifacts (project runs on Node/npm)
+bun.lock
+bun.lockb
+bunfig.toml
+.bun/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
