@@ -3,8 +3,7 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src/**/*.js", "src/**/*.jsx", "vite.config.js"]
+  "include": ["src/**/*", "vite.config.js"]
 }
