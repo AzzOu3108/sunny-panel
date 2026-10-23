@@ -55,8 +55,8 @@ export default function ProjectCardMenu({ items = [], open, onOpenChange }) {
             flipUp ? "bottom-full mb-2" : "top-full mt-2",
           )}
         >
-          {items.map((item) => (
-            <div key={item.label}>
+          {items.map((item, index) => (
+            <div key={`${item.label ?? "menu-item"}-${index}`}>
               {item.destructive && <div className="mx-1 my-1.5 border-t border-border" />}
               <button
                 type="button"
