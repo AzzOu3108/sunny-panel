@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import Button from "../ui/Button";
 import TaskNumberStepper from "./TaskNumberStepper";
 import { Calendar, ChevronDown } from "lucide-react";
 import arrowIcon from "../../assets/Landing-assets/All-Icons/Icons-Arrow.svg";
@@ -57,7 +58,11 @@ export default function StepOneProjectDetails({
           placeholder="Name exemple"
           aria-invalid={Boolean(errors.title)}
           aria-describedby={errors.title ? "project-title-error" : undefined}
-          className={cn(inputClasses, "mt-2", errors.title && "border-red-400")}
+          className={cn(
+            inputClasses,
+            "mt-2",
+            errors.title && "border-red-500 ring-2 ring-red-500/30",
+          )}
         />
 
         <div className="mt-1.5 min-h-5">
@@ -100,7 +105,7 @@ export default function StepOneProjectDetails({
             className={cn(
               inputClasses,
               "appearance-none pl-12 pr-12 [&::-webkit-calendar-picker-indicator]:hidden",
-              errors.dueDate && "border-red-400",
+              errors.dueDate && "border-red-500 ring-2 ring-red-500/30",
             )}
           />
           <ChevronDown
@@ -127,6 +132,7 @@ export default function StepOneProjectDetails({
           Cancel
         </Button>
         <Button
+          type="button"
           onClick={onNext}
           className="h-12 px-7 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
