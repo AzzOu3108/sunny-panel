@@ -22,11 +22,11 @@ export default function TaskInputRow({ index, value, onChange, onRemove, canRemo
         disabled={!canRemove}
         aria-label={`Delete task ${index + 1}`}
         className={cn(
-          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50",
+          "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-red-500 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50",
           !canRemove && "cursor-not-allowed opacity-30 hover:bg-transparent",
         )}
       >
-        <Trash2 className="h-5 w-5" />
+        <Trash2 className="h-5 w-5 text-red-500" />
       </button>
     </li>
   );

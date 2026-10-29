@@ -31,7 +31,7 @@ export default function StepOneProjectDetails({
       inert={!active}
       aria-hidden={!active}
       className={cn(
-        "col-start-1 row-start-1 min-w-0 transition-all duration-200 ease-in-out motion-reduce:transition-none",
+        "col-start-1 row-start-1 flex min-w-0 flex-col transition-all duration-200 ease-in-out motion-reduce:transition-none",
         active ? "translate-x-0 opacity-100" : "-translate-x-8 opacity-0 pointer-events-none",
       )}
     >
@@ -123,7 +123,7 @@ export default function StepOneProjectDetails({
         </div>
       </div>
 
-      <div className="sticky bottom-0 -mx-1 mt-6 flex items-center justify-between gap-3 bg-[#FBF3EC] px-1">
+      <div className="-mx-1 mt-auto flex items-center justify-between gap-3 bg-[#FBF3EC] px-1 pt-6">
         <Button
           variant="ghost"
           onClick={onCancel}
@@ -134,10 +134,10 @@ export default function StepOneProjectDetails({
         <Button
           type="button"
           onClick={onNext}
-          className="h-12 px-7 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="h-12 flex-1 px-7 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           Go Next
-          <img src={arrowIcon} alt="" className="h-3.5 w-3.5" />
+          <img src={arrowIcon} alt="" className="h-3.5 w-3.5 brightness-0 invert" />
         </Button>
       </div>
     </section>
