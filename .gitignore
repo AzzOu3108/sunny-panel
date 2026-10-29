@@ -36,3 +36,4 @@ bunfig.toml
 *.njsproj
 *.sln
 *.sw?
+.env
