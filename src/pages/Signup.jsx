@@ -1,8 +1,10 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import logo from "../assets/Landing-assets/All-Logos/logo.svg";
 import { useState } from "react";
+import api, { getErrorMessage, setTokens } from "../lib/api";
 
 function Signup() {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,6 +15,24 @@ function Signup() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { data } = await api.post("/auth/signup", { fullName, email, password });
+      if (!data.accessToken || !data.refreshToken) {
+        throw new Error("The signup response did not include authentication tokens.");
+      }
+      setTokens(data.accessToken, data.refreshToken);
+      await navigate({ to: "/dashboard" });
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, "Unable to create your account. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -43,7 +63,7 @@ function Signup() {
               <img src={logo} alt="Manag'it" />
             </div>
 
-            <form onSubmit={handleSubmit} noValidate>
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="fullname">Full Name</label>
                 <div className="input-wrapper">

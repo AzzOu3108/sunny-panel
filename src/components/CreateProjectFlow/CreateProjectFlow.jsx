@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import StepOneProjectDetails from "./StepOneProjectDetails";
 import StepTwoTasks from "./StepTwoTasks";
+import { getErrorMessage } from "../../lib/api";
 
 const EMPTY_FORM = {
   title: "",
@@ -18,6 +19,8 @@ export default function CreateProjectFlow({ onClose, onComplete }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({ title: null, dueDate: null, tasks: null });
+  const [submitError, setSubmitError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cardRef = useRef(null);
   const previouslyFocused = useRef(null);
@@ -100,6 +103,7 @@ export default function CreateProjectFlow({ onClose, onComplete }) {
 
   function updateFormData(patch) {
     setFormData((prev) => ({ ...prev, ...patch }));
+    setSubmitError(null);
     // Clear the error for any field the user is actively editing.
     setErrors((prev) => {
       const next = { ...prev };
@@ -149,7 +153,7 @@ export default function CreateProjectFlow({ onClose, onComplete }) {
     setStep(1);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const tasks = (formData.tasks ?? []).map((task) => task.trim()).filter(Boolean);
     if (tasks.length === 0) {
       setErrors((prev) => ({ ...prev, tasks: "Add at least one task." }));
@@ -161,11 +165,19 @@ export default function CreateProjectFlow({ onClose, onComplete }) {
       taskCount: tasks.length,
     }));
 
-    onComplete({
-      title: formData.title.trim(),
-      dueDate: formData.dueDate,
-      tasks,
-    });
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await onComplete({
+        title: formData.title.trim(),
+        dueDate: formData.dueDate,
+        tasks,
+      });
+    } catch (error) {
+      setSubmitError(getErrorMessage(error, "Unable to create the project. Please try again."));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function requestClose() {
@@ -200,6 +212,8 @@ export default function CreateProjectFlow({ onClose, onComplete }) {
             active={step === 2}
             formData={formData}
             errors={errors}
+            submitError={submitError}
+            isSubmitting={isSubmitting}
             updatedFormData={updateFormData}
             onBack={goBack}
             onSubmit={handleSubmit}

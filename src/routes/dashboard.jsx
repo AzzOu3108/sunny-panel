@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Search, Plus, User, FolderKanban, CheckCircle2, Clock, ClipboardList } from "lucide-react";
 import ProjectCard from "../components/dashboard/ProjectCard";
 import CreateProjectFlow from "../components/CreateProjectFlow/CreateProjectFlow";
+import api, { getErrorMessage, isAuthenticated } from "../lib/api";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -26,36 +27,13 @@ export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
 });
 
-const demoProjects = [
-  {
-    id: "project-1",
-    title: "Website Redesign",
-    dueDate: "2026-11-15",
-    tasks: [
-      { id: "task-1", text: "Finalize homepage sections", completed: true },
-      { id: "task-2", text: "Review mobile navigation", completed: false },
-      { id: "task-3", text: "Send design handoff", completed: false },
-    ],
-  },
-  {
-    id: "project-2",
-    title: "Marketing Campaign",
-    dueDate: "2026-12-03",
-    tasks: [
-      { id: "task-4", text: "Prepare launch brief", completed: true },
-      { id: "task-5", text: "Confirm ad creatives", completed: true },
-      { id: "task-6", text: "Schedule social posts", completed: false },
-    ],
-  },
+const statCards = [
+  { label: "Total Projects", key: "totalProjects", icon: FolderKanban },
+  { label: "Completed Tasks", key: "completedTasks", icon: CheckCircle2 },
+  { label: "Pending Tasks", key: "pendingTasks", icon: Clock },
 ];
 
-const stats = [
-  { label: "Total Projects", value: "2", icon: FolderKanban },
-  { label: "Completed Tasks", value: "3", icon: CheckCircle2 },
-  { label: "Pending Tasks", value: "3", icon: Clock },
-];
-
-function Topbar({ onCreateProject }) {
+function Topbar({ onCreateProject, searchQuery, onSearchQueryChange }) {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-surface">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6">
@@ -68,6 +46,8 @@ function Topbar({ onCreateProject }) {
             type="search"
             placeholder="Search projects, tasks, or members..."
             aria-label="Search projects, tasks, or members"
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
             className="h-11 w-full rounded-full border border-border bg-background pl-11 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/25"
           />
         </div>
@@ -93,50 +73,134 @@ function Topbar({ onCreateProject }) {
 }
 
 function Dashboard() {
-  const [projects, setProjects] = useState(demoProjects);
+  const navigate = Route.useNavigate();
+  const [projects, setProjects] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated()) {
+      navigate({ to: "/login" });
+      return () => {
+        active = false;
+      };
+    }
+
+    Promise.all([api.get("/projects"), api.get("/stats")])
+      .then(([projectsResponse, statsResponse]) => {
+        if (!Array.isArray(projectsResponse.data)) {
+          throw new Error("The projects response was not a list.");
+        }
+        if (!active) return;
+        setProjects(projectsResponse.data);
+        setStats(statsResponse.data);
+      })
+      .catch((error) => {
+        if (active) {
+          setDashboardError(getErrorMessage(error, "Unable to load your dashboard."));
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
   const openCreateProject = () => setCreateProjectOpen(true);
   const closeCreateProject = () => setCreateProjectOpen(false);
-  const handleCreateProject = ({ title, dueDate, tasks }) => {
-    setProjects((currentProjects) => [
-      {
-        id: crypto.randomUUID(),
-        title,
-        dueDate,
-        tasks: tasks.map((text) => ({
-          id: crypto.randomUUID(),
-          text,
-          completed: false,
-        })),
-      },
-      ...currentProjects,
-    ]);
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase();
+  const filteredProjects = normalizedSearchQuery
+    ? projects.filter(
+        (project) =>
+          project.title.toLocaleLowerCase().includes(normalizedSearchQuery) ||
+          project.tasks.some((task) =>
+            task.text.toLocaleLowerCase().includes(normalizedSearchQuery),
+          ),
+      )
+    : projects;
+
+  const refreshStats = async () => {
+    const { data } = await api.get("/stats");
+    setStats(data);
+    setDashboardError(null);
+  };
+
+  const handleCreateProject = async ({ title, dueDate, tasks }) => {
+    setDashboardError(null);
+    const { data: project } = await api.post("/projects", { title, dueDate, tasks });
+    setProjects((currentProjects) => [project, ...currentProjects]);
     closeCreateProject();
+    refreshStats().catch((error) => {
+      setDashboardError(
+        getErrorMessage(error, "Project created, but stats could not be refreshed."),
+      );
+    });
   };
 
-  const handleToggleTask = (projectId, taskId) => {
-    setProjects((currentProjects) =>
-      currentProjects.map((project) =>
-        project.id !== projectId
-          ? project
-          : {
-              ...project,
-              tasks: project.tasks.map((task) =>
-                task.id === taskId ? { ...task, completed: !task.completed } : task,
-              ),
-            },
-      ),
-    );
+  const handleToggleTask = async (projectId, taskId) => {
+    const project = projects.find((item) => item.id === projectId);
+    const task = project?.tasks.find((item) => item.id === taskId);
+    if (!task) return;
+
+    try {
+      const { data: updatedTask } = await api.patch(`/projects/${projectId}/tasks/${taskId}`, {
+        completed: !task.completed,
+      });
+      setDashboardError(null);
+      setProjects((currentProjects) =>
+        currentProjects.map((item) =>
+          item.id === projectId
+            ? {
+                ...item,
+                tasks: item.tasks.map((currentTask) =>
+                  currentTask.id === taskId ? updatedTask : currentTask,
+                ),
+              }
+            : item,
+        ),
+      );
+      refreshStats().catch((error) => {
+        setDashboardError(
+          getErrorMessage(error, "Task updated, but stats could not be refreshed."),
+        );
+      });
+    } catch (error) {
+      setDashboardError(getErrorMessage(error, "Unable to update this task."));
+    }
   };
 
-  const handleDeleteProject = (projectId) => {
-    setProjects((currentProjects) => currentProjects.filter((project) => project.id !== projectId));
+  const handleDeleteProject = async (projectId) => {
+    try {
+      await api.delete(`/projects/${projectId}`);
+      setDashboardError(null);
+      setProjects((currentProjects) =>
+        currentProjects.filter((project) => project.id !== projectId),
+      );
+      refreshStats().catch((error) => {
+        setDashboardError(
+          getErrorMessage(error, "Project deleted, but stats could not be refreshed."),
+        );
+      });
+    } catch (error) {
+      setDashboardError(getErrorMessage(error, "Unable to delete this project."));
+    }
   };
 
   return (
     <div className="min-h-screen bg-background font-display">
-      <Topbar onCreateProject={openCreateProject} />
+      <Topbar
+        onCreateProject={openCreateProject}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+      />
 
       <main className="mx-auto max-w-7xl px-6 py-10">
         <h1 className="text-5xl font-extrabold tracking-tight text-foreground">Dashboard</h1>
@@ -147,14 +211,14 @@ function Dashboard() {
         <section className="mt-8">
           <h2 className="text-xl font-bold text-foreground">Overview</h2>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {stats.map(({ label, value, icon: Icon }) => (
+            {statCards.map(({ label, key, icon: Icon }) => (
               <div
                 key={label}
                 className="flex items-center justify-between rounded-xl border border-border bg-surface p-6 shadow-[var(--shadow-card)]"
               >
                 <div>
                   <p className="text-sm text-muted-foreground">{label}</p>
-                  <p className="mt-3 text-3xl font-bold text-foreground">{value}</p>
+                  <p className="mt-3 text-3xl font-bold text-foreground">{stats?.[key] ?? 0}</p>
                 </div>
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-primary">
                   <Icon className="h-5 w-5" />
@@ -167,27 +231,46 @@ function Dashboard() {
         <section className="mt-10">
           <h2 className="text-xl font-bold text-foreground">Active Projects</h2>
 
-          {projects.length === 0 ? (
+          {dashboardError && (
+            <p
+              role="alert"
+              className="mt-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              {dashboardError}
+            </p>
+          )}
+
+          {loading ? (
+            <p className="mt-8 text-sm text-muted-foreground" role="status">
+              Loading projects...
+            </p>
+          ) : filteredProjects.length === 0 ? (
             <div className="mt-8 flex flex-col items-center justify-center py-10 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-primary">
                 <ClipboardList className="h-8 w-8" />
               </span>
-              <h3 className="mt-5 text-lg font-bold text-foreground">No projects yet</h3>
+              <h3 className="mt-5 text-lg font-bold text-foreground">
+                {normalizedSearchQuery ? "No matching projects" : "No projects yet"}
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                How about creating a project right now?
+                {normalizedSearchQuery
+                  ? "Try a different project or task name."
+                  : "How about creating a project right now?"}
               </p>
-              <button
-                type="button"
-                onClick={openCreateProject}
-                className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-              >
-                <Plus className="h-4 w-4" />
-                Create a new project
-              </button>
+              {!normalizedSearchQuery && (
+                <button
+                  type="button"
+                  onClick={openCreateProject}
+                  className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create a new project
+                </button>
+              )}
             </div>
           ) : (
             <div className="mt-8 grid gap-6 lg:grid-cols-2">
-              {projects.map((project) => (
+              {filteredProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
                   project={project}

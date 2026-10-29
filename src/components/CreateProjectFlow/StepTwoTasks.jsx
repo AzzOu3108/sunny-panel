@@ -9,6 +9,8 @@ export default function StepTwoTasks({
   active,
   formData,
   errors,
+  submitError,
+  isSubmitting,
   updatedFormData,
   onBack,
   onSubmit,
@@ -82,6 +84,11 @@ export default function StepTwoTasks({
           {errors.tasks}
         </p>
       )}
+      {submitError && (
+        <p role="alert" className="mt-2 text-xs font-medium text-red-500">
+          {submitError}
+        </p>
+      )}
 
       <div className="-mx-1 mt-auto flex items-center justify-between gap-3 bg-[#FBF3EC] px-1 pt-6">
         <Button
@@ -96,9 +103,10 @@ export default function StepTwoTasks({
         <Button
           type="button"
           onClick={onSubmit}
+          disabled={isSubmitting}
           className="h-12 flex-1 px-7 text-sm font-semibold focus-visible:outline-none focus-visibale:ring-2 focus-visible:ring-primary/40"
         >
-          Create Project
+          {isSubmitting ? "Creating Project..." : "Create Project"}
           <img src={arrowIcon} alt="" className="h-3.5 w-3.5 brightness-0 invert" />
         </Button>
       </div>

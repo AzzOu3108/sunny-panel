@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import logo from "../assets/Landing-assets/All-Logos/logo.svg";
 import { useState } from "react";
+import api, { getErrorMessage, setTokens } from "../lib/api";
 
 function Login() {
   const navigate = useNavigate();
@@ -9,11 +10,22 @@ function Login() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    navigate({ to: "/dashboard" });
+    try {
+      const { data } = await api.post("/auth/login", { email, password });
+      if (!data.accessToken || !data.refreshToken) {
+        throw new Error("The login response did not include authentication tokens.");
+      }
+      setTokens(data.accessToken, data.refreshToken);
+      await navigate({ to: "/dashboard" });
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, "Unable to log in. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
   }
   return (
     <div className="auth-page">
@@ -43,7 +55,7 @@ function Login() {
               <img src={logo} alt="Manag'it" />
             </div>
 
-            <form onSubmit={handleSubmit} noValidate>
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="email">Email</label>
                 <div className="input-wrapper">
@@ -54,6 +66,7 @@ function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Exemple@gmail.com"
                     autoComplete="email"
+                    required
                   />
                 </div>
               </div>
@@ -68,6 +81,7 @@ function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="**************"
                     autoComplete="current-password"
+                    required
                   />
                   <div className="input-icon">
                     <svg
