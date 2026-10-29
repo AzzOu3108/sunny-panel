@@ -22,7 +22,7 @@ export default function ProjectCard({
   const completedTasks = project.tasks.filter((task) => task.completed).length;
   const progress = totalTasks === 0 ? 0 : completedTasks / totalTasks;
   return (
-    <Card className="rounded-2xl border-primary/20 p-5 sm:p-6">
+    <Card className="flex h-full flex-col rounded-2xl border-primary/20 p-5 sm:p-6">
       <div className="relative">
         <h3 className="truncate px-10 text-center text-lg font-extrabold tracking-tight text-foreground">
           {project.title}
@@ -103,7 +103,7 @@ export default function ProjectCard({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-primary/10 pt-3">
+      <div className="mt-auto flex items-center justify-between border-t border-primary/10 pt-3">
         <span className="text-xs text-muted-foreground">Due Date</span>
         <span className="text-xs font-semibold text-foreground">{formatDate(project.dueDate)}</span>
       </div>

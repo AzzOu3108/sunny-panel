@@ -1,17 +1,8 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Search,
-  Plus,
-  User,
-  FolderKanban,
-  CheckCircle2,
-  Clock,
-  ClipboardList,
-  X,
-} from "lucide-react";
+import { Search, Plus, User, FolderKanban, CheckCircle2, Clock, ClipboardList } from "lucide-react";
 import ProjectCard from "../components/dashboard/ProjectCard";
-import StepOneProjectDetails from "../components/CreateProjectFlow/StepOneProjectDetails";
+import CreateProjectFlow from "../components/CreateProjectFlow/CreateProjectFlow";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -105,29 +96,23 @@ function Dashboard() {
   const [projects, setProjects] = useState(demoProjects);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
-  const [formData, setFormData] = useState({ title: "", taskCount: 1, dueDate: "" });
-  const [formErrors, setFormErrors] = useState({});
   const openCreateProject = () => setCreateProjectOpen(true);
   const closeCreateProject = () => setCreateProjectOpen(false);
-  const updateFormData = (updates) => {
-    setFormData((current) => ({ ...current, ...updates }));
-    setFormErrors((current) => {
-      const next = { ...current };
-      Object.entries(updates).forEach(([field, value]) => {
-        if (typeof value === "string" && value.trim()) delete next[field];
-      });
-      return next;
-    });
-  };
-  const validateProjectDetails = () => {
-    const errors = {};
-    if (!formData.title.trim()) errors.title = "Project title is required.";
-    if (!formData.dueDate) errors.dueDate = "Due date is required.";
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-  const handleNext = () => {
-    if (validateProjectDetails()) closeCreateProject();
+  const handleCreateProject = ({ title, dueDate, tasks }) => {
+    setProjects((currentProjects) => [
+      {
+        id: crypto.randomUUID(),
+        title,
+        dueDate,
+        tasks: tasks.map((text) => ({
+          id: crypto.randomUUID(),
+          text,
+          completed: false,
+        })),
+      },
+      ...currentProjects,
+    ]);
+    closeCreateProject();
   };
 
   const handleToggleTask = (projectId, taskId) => {
@@ -219,40 +204,7 @@ function Dashboard() {
       </main>
 
       {createProjectOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
-          onClick={closeCreateProject}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") closeCreateProject();
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-project-heading"
-            className="relative my-auto max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-3xl bg-[#FBF3EC] p-6 shadow-xl sm:p-8"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={closeCreateProject}
-              aria-label="Close create project form"
-              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-black/5 hover:text-foreground"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <div>
-              <StepOneProjectDetails
-                active
-                formData={formData}
-                errors={formErrors}
-                updateFormData={updateFormData}
-                onNext={handleNext}
-                onCancel={closeCreateProject}
-              />
-            </div>
-          </section>
-        </div>
+        <CreateProjectFlow onClose={closeCreateProject} onComplete={handleCreateProject} />
       )}
     </div>
   );
