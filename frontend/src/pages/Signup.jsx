@@ -104,6 +104,7 @@ function Signup() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="**************"
                     required
+                    minLength={8}
                     autoComplete="new-password"
                   />
                   <div className="input-icon">

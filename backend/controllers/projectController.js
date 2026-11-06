@@ -2,7 +2,7 @@ const Project = require('../models/Project')
 
 const getProjects = async (req, res) => {
     try {
-        const projects = await Project.find({}).sort({createdAt: -1})
+        const projects = await Project.find({owner: req.user.id}).sort({createdAt: -1})
         return res.status(200).json(projects)
     } catch (error) {
         console.error(error)
@@ -23,6 +23,7 @@ const createProjects = async (req, res) => {
 
     try {
         const project = await Project.create({
+            owner: req.user.id,
             title: title.trim(),
             dueDate: dueDate || "",
             tasks: (tasks || []).map((task) =>
@@ -41,7 +42,7 @@ const deleteProject = async (req, res) => {
     const {projectId} = req.params
 
     try {
-        const project = await Project.findOneAndDelete({_id: projectId})
+        const project = await Project.findOneAndDelete({_id: projectId, owner: req.user.id})
         if(!project) {
             return res.status(404).json({error: "Project not found"})
         }

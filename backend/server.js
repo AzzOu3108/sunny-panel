@@ -1,39 +1,8 @@
 require('dotenv').config()
-const express = require('express')
-const corsOptions = require('./config/corsOptions')
-const cors = require('cors')
-const helmet = require('helmet')
 const connectDB = require('./config/DB')
-const projectRouter = require('./routes/projectRouter')
-const taskRouter = require('./routes/taskRouter')
-const statsRouter = require('./routes/statsRouter')
-
-const app = express()
+const app = require('./app')
 
 const PORT = process.env.PORT || 3000
-
-//Security headrs
-app.use(helmet())
-
-//CORS
-app.use(cors(corsOptions))
-
-//JSON body parsing
-app.use(express.json())
-
-//Health check endpoint
-app.get('/api/health', (req, res) =>{
-    res.status(200).json({ message: 'Server is healthy'})
-})
-
-app.use("/api/projects", projectRouter)
-app.use("/api/projects", taskRouter)
-app.use("/api/stats", statsRouter)
-
-//404 for unknown routes
-app.use((req, res) => {
-    res.status(404).json({error: `No route for ${req.method} ${req.originalUrl}`})
-})
 
 const startServer = async() => {
     try {

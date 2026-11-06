@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, Plus, User, FolderKanban, CheckCircle2, Clock, ClipboardList } from "lucide-react";
+import {
+  Search,
+  Plus,
+  LogOut,
+  FolderKanban,
+  CheckCircle2,
+  Clock,
+  ClipboardList,
+} from "lucide-react";
 import ProjectCard from "../components/dashboard/ProjectCard";
 import CreateProjectFlow from "../components/CreateProjectFlow/CreateProjectFlow";
-import api, { getErrorMessage, isAuthenticated } from "../lib/api";
+import AddTasksDialog from "../components/dashboard/AddTasksDialog";
+import api, { getErrorMessage, isAuthenticated, logout } from "../lib/api";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -33,7 +42,7 @@ const statCards = [
   { label: "Pending Tasks", key: "pendingTasks", icon: Clock },
 ];
 
-function Topbar({ onCreateProject, searchQuery, onSearchQueryChange }) {
+function Topbar({ onCreateProject, onLogout, searchQuery, onSearchQueryChange }) {
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-surface">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6">
@@ -61,10 +70,13 @@ function Topbar({ onCreateProject, searchQuery, onSearchQueryChange }) {
             <span className="hidden sm:inline">Create a new project</span>
           </button>
           <button
-            aria-label="Account"
+            type="button"
+            onClick={onLogout}
+            aria-label="Log out"
+            title="Log out"
             className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-primary transition hover:bg-accent"
           >
-            <User className="h-5 w-5" />
+            <LogOut className="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -80,6 +92,7 @@ function Dashboard() {
   const [dashboardError, setDashboardError] = useState(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [addTasksProjectId, setAddTasksProjectId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -145,6 +158,32 @@ function Dashboard() {
     });
   };
 
+  const handleAddTasks = async (tasks) => {
+    const { data: updatedProject } = await api.post(`/projects/${addTasksProjectId}/tasks`, {
+      tasks,
+    });
+    setProjects((currentProjects) =>
+      currentProjects.map((project) =>
+        project.id === updatedProject.id ? updatedProject : project,
+      ),
+    );
+    setAddTasksProjectId(null);
+    setDashboardError(null);
+    refreshStats().catch((error) => {
+      setDashboardError(getErrorMessage(error, "Tasks added, but stats could not be refreshed."));
+    });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      setDashboardError(getErrorMessage(error, "Unable to log out cleanly."));
+    } finally {
+      await navigate({ to: "/login" });
+    }
+  };
+
   const handleToggleTask = async (projectId, taskId) => {
     const project = projects.find((item) => item.id === projectId);
     const task = project?.tasks.find((item) => item.id === taskId);
@@ -198,6 +237,7 @@ function Dashboard() {
     <div className="min-h-screen bg-background font-display">
       <Topbar
         onCreateProject={openCreateProject}
+        onLogout={handleLogout}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
       />
@@ -275,7 +315,7 @@ function Dashboard() {
                   key={project.id}
                   project={project}
                   onToggleTask={handleToggleTask}
-                  onOpenAddTasks={() => undefined}
+                  onOpenAddTasks={() => setAddTasksProjectId(project.id)}
                   onDeleteProject={handleDeleteProject}
                   menuOpen={menuOpenId === project.id}
                   onMenuOpenChange={(next) => setMenuOpenId(next ? project.id : null)}
@@ -288,6 +328,9 @@ function Dashboard() {
 
       {createProjectOpen && (
         <CreateProjectFlow onClose={closeCreateProject} onComplete={handleCreateProject} />
+      )}
+      {addTasksProjectId && (
+        <AddTasksDialog onClose={() => setAddTasksProjectId(null)} onSubmit={handleAddTasks} />
       )}
     </div>
   );

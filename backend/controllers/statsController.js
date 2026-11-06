@@ -2,7 +2,7 @@ const Project = require('../models/Project')
 
 const getStats = async (req, res) => {
     try {
-        const projects = await Project.find({}).select('tasks')
+        const projects = await Project.find({owner: req.user.id}).select('tasks')
 
         let completedTasks = 0
         let pendingTasks = 0

@@ -1,6 +1,5 @@
 import axios from "axios";
 
-
 /**
  * Central API client for the whole app.
  *
